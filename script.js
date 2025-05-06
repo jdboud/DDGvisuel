@@ -97,38 +97,7 @@ function createLineGraph(){
   scene.add(line);
   objects.push(line);
 }
-
-
-function createLineGraph(){
-  const geom  = new THREE.BufferGeometry();
-  const verts = [];
-  const cols  = [];
-
-  formattedData.forEach(d => {
-    const x = (d.X - xCenter) / xRange * XY_FACTOR;
-    const y = (d.Y - yCenter) / yRange * XY_FACTOR;
-    const z = d.Z / Z_SCALE_FACTOR;
-    verts.push(x, y, z);
-
-    const c = new THREE.Color(colorScale(d.Density));
-    cols.push(c.r, c.g, c.b);
-  });
-
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geom.setAttribute('color',    new THREE.Float32BufferAttribute(cols,  3));
-
-  const mat  = new THREE.LineBasicMaterial({
-    vertexColors: true,
-    transparent:  true,
-    opacity:      +document.getElementById('opacity').value
-  });
-  const line = new THREE.Line(geom, mat);
-
-  scene.add(line);
-  objects.push(line);
-}
-
- function renderVisualization(data){
+function renderVisualization(data){
     formattedData = data;
     computeScales();
     clearScene();
@@ -141,23 +110,23 @@ function createLineGraph(){
 
   // redraw on type change
   document.getElementById('visualizationType')
-    .addEventListener('change',()=>renderVisualization(formattedData));
+    .addEventListener('change', () => renderVisualization(formattedData));
 
-  // camera controls & animate (keep this!)
-  camera.position.set(50,50,50);
+  // camera controls & animate
+  camera.position.set(50, 50, 50);
   camera.lookAt(scene.position);
 
   function animate(){
     requestAnimationFrame(animate);
-    camera.zoom = +document.getElementById('zoom').value/50;
+    camera.zoom = +document.getElementById('zoom').value / 50;
     camera.updateProjectionMatrix();
     camera.rotation.z = +document.getElementById('rotation').value * Math.PI/180;
-    renderer.render(scene,camera);
+    renderer.render(scene, camera);
   }
   animate();
 
-  window.addEventListener('resize',()=>{
-    renderer.setSize(window.innerWidth,window.innerHeight);
-    camera.aspect = window.innerWidth/window.innerHeight;
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
