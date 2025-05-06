@@ -32,8 +32,8 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 window.addEventListener('DOMContentLoaded', () => {
   // seed from the HTML sliders
   const xySlider = document.getElementById('xyFactor');
-  const zSlider  = document.getElementById('zScaleFactor');
-  xySlider.value      = 0.5;               // default, so grid is nicely spaced
+        xySlider.value = 0.5;      // set default spacing
+ const zSlider  = document.getElementById('zScaleFactor');
   XY_FACTOR           = +xySlider.value;
   Z_SCALE_FACTOR      = +zSlider.value;
   xySlider.addEventListener('input', e => {
