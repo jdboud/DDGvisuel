@@ -13,7 +13,7 @@ scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
 scene.add(new THREE.AmbientLight(0xfffff4,1));
 
 // initial camera pos
-camera.position.set(2, 2, 5);
+camera.position.set(2, 2, 15);
 camera.rotation.x = 0;
 
 // ─── 2. Simple parser ──────────────────────────────────────────────────────
