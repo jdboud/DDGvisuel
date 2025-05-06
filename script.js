@@ -15,7 +15,7 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 // initial camera pos
 camera.position.set(2, 2, 13);
 camera.rotation.x = 0;
-camera.rotation.y = 0;  // start flat
+camera.rotation.y = 0;
 
 // ─── 2. Simple parser ──────────────────────────────────────────────────────
 function parseMyLines(text) {
@@ -71,7 +71,7 @@ document.getElementById('parseBtn').onclick = () => {
 };
 
 // X‐tilt slider
-document.getElementById('tilt').addEventListener('input', e => {
+document.getElementById('tiltX').addEventListener('input', e => {
   camera.rotation.x = +e.target.value * Math.PI/180;
 });
 // **Y‐tilt slider**
