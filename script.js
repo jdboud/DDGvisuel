@@ -1,7 +1,7 @@
 // ─── Globals ─────────────────────────────────────────────────────────────
 let formattedData = [], objects = [], colorScale;
 
-// ─── 1. Three.js Setup ────────────────────────────────────────────────────
+// ─── 1. Three.js Setup ───────────────────────────────────────────────────
 const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -15,6 +15,7 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 // initial camera pos
 camera.position.set(2, 2, 13);
 camera.rotation.x = 0;
+camera.rotation.y = 0;  // start flat
 
 // ─── 2. Simple parser ──────────────────────────────────────────────────────
 function parseMyLines(text) {
@@ -44,7 +45,7 @@ function render(data) {
   objects.forEach(o=>scene.remove(o));
   objects = [];
   // draw
-  const wrap = 6, spacing = 1.5;
+  const wrap = 6, spacing = 0.5;
   formattedData.forEach((d,i)=>{
     const col = i % wrap, row = Math.floor(i/wrap);
     const x = (wrap-1-col)*spacing, y = row*spacing;
@@ -69,9 +70,13 @@ document.getElementById('parseBtn').onclick = () => {
   else alert('No valid records found.');
 };
 
-// tilt slider
+// X‐tilt slider
 document.getElementById('tilt').addEventListener('input', e => {
   camera.rotation.x = +e.target.value * Math.PI/180;
+});
+// **Y‐tilt slider**
+document.getElementById('tiltY').addEventListener('input', e => {
+  camera.rotation.y = +e.target.value * Math.PI/180;
 });
 
 // ─── 5. Animate ─────────────────────────────────────────────────────────────
