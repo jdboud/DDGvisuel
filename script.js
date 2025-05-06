@@ -1,6 +1,6 @@
 // ─── 0. Constants & Globals ─────────────────────────────────────────────────
-const XY_FACTOR      = 0.05;    // scales raw X/Y distances
-const Z_SCALE_FACTOR = 1500;    // scales raw Z heights
+let XY_FACTOR      = 0.05;    // scales raw X/Y distances
+let Z_SCALE_FACTOR = 1500;    // scales raw Z heights
 
 // Three.js setup
 const scene    = new THREE.Scene();
@@ -44,6 +44,17 @@ document.getElementById('parseBtn').onclick = () => {
   if (!data.length) return alert('No valid records found.');
   renderVisualization(data);
 };
+
+// live‐update scales
+document.getElementById('xyFactor').addEventListener('input', e => {
+  XY_FACTOR = +e.target.value;
+  renderVisualization(formattedData);
+});
+document.getElementById('zScaleFactor').addEventListener('input', e => {
+  Z_SCALE_FACTOR = +e.target.value;
+  renderVisualization(formattedData);
+});
+
 
 // ─── 2. Compute scales (centers + color) ──────────────────────────────────
 function computeScales() {
