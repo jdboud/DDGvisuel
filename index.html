@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>3D Data Visualization</title>
+  <title>3D Data Visualization with Tilt</title>
   <style>
     body { margin: 0; overflow: hidden; background: #fff; }
     #inputArea {
@@ -13,16 +13,21 @@
       font-family: sans-serif; z-index: 10;
     }
     #rawData { width: 400px; height: 80px; font-family: monospace; }
-    #parseBtn { margin-top: 5px; }
+    #controls { margin-top: 8px; }
+    #controls label { margin-right: 6px; }
   </style>
 </head>
 <body>
 
-  <!-- Paste your data here -->
+  <!-- Paste & Controls -->
   <div id="inputArea">
     <textarea id="rawData"
       placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
-    <button id="parseBtn">Parse & Render</button>
+    <div id="controls">
+      <button id="parseBtn">Parse & Render</button>
+      <label for="tilt">Tilt</label>
+      <input type="range" id="tilt" min="-45" max="45" value="0">
+    </div>
   </div>
 
   <!-- Three.js + D3 -->
