@@ -17,7 +17,8 @@ const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-camera.position.set(10, 10, 20);
+camera.position.set(20, 20, 40);
+controls.update();
 camera.lookAt(0, 0, 0);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xffffff, 1);
@@ -31,9 +32,9 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 // ─── 2. DOM Ready: hook parse button & sliders & dropdown ─────────────────
 window.addEventListener('DOMContentLoaded', () => {
   // seed from the HTML sliders
-  const xySlider = document.getElementById('xyFactor');
+  const xySlider = document.getElementById('xyFactor').value = 0.5;
   const zSlider  = document.getElementById('zScaleFactor');
-  XY_FACTOR      = +xySlider.value;
+  XY_FACTOR      = 0.5;
   Z_SCALE_FACTOR = +zSlider.value;
   xySlider.addEventListener('input', e => { XY_FACTOR = +e.target.value; renderVisualization(formattedData); });
   zSlider .addEventListener('input', e => { Z_SCALE_FACTOR = +e.target.value; renderVisualization(formattedData); });
@@ -102,8 +103,9 @@ function createBarGraph() {
     const row = Math.floor(idx / wrap);
 
     // right→left
-    const x = (wrap - 1 - col) * XY_FACTOR * 2; // *2 to spread out a bit more
-    const y = row * XY_FACTOR * 2;              // same here
+    const spacing = XY_FACTOR * 4;   // e.g. each cell 2 units wide
+    const x = (wrap - 1 - col) * spacing;
+    const y = row * spacing;
     const h = d.rawReading / Z_SCALE_FACTOR;
 
     // make each bar 80% of the cell, but cell is now 2*XY_FACTOR
