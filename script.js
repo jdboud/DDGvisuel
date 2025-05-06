@@ -128,40 +128,36 @@ function createLineGraph(){
   objects.push(line);
 }
 
-function renderVisualization(data){
-  formattedData = data;
-  computeScales();
-  clearScene();
-  const type = document.getElementById('visualizationType').value;
-  if(type==='bar')      createBarGraph();
-  else if(type==='scatter') createScatterPlot();
-  else if(type==='heatmap')  createHeatmap();
-  else if(type==='line')     createLineGraph();
-}
+ function renderVisualization(data){
+    formattedData = data;
+    computeScales();
+    clearScene();
+    const type = document.getElementById('visualizationType').value;
+    if(type==='bar')      createBarGraph();
+    else if(type==='scatter') createScatterPlot();
+    else if(type==='heatmap')  createHeatmap();
+    else if(type==='line')     createLineGraph();
+  }
 
-// redraw on type change
-document.getElementById('visualizationType')
-  .addEventListener('change',()=>renderVisualization(formattedData));
+  // redraw on type change
+  document.getElementById('visualizationType')
+    .addEventListener('change',()=>renderVisualization(formattedData));
 
-// ─── 4. Camera controls & animate ─────────────────────────────────────────────
+  // camera controls & animate (keep this!)
+  camera.position.set(50,50,50);
+  camera.lookAt(scene.position);
 
-camera.position.set(50,50,50);
-camera.lookAt(scene.position);
+  function animate(){
+    requestAnimationFrame(animate);
+    camera.zoom = +document.getElementById('zoom').value/50;
+    camera.updateProjectionMatrix();
+    camera.rotation.z = +document.getElementById('rotation').value * Math.PI/180;
+    renderer.render(scene,camera);
+  }
+  animate();
 
-function animate(){
-  requestAnimationFrame(animate);
-  // zoom slider
-  camera.zoom = +document.getElementById('zoom').value/50;
-  camera.updateProjectionMatrix();
-  // rotation slider
-  camera.rotation.z = +document.getElementById('rotation').value * Math.PI/180;
-  renderer.render(scene,camera);
-}
-animate();
-
-// handle resize
-window.addEventListener('resize',()=>{
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-});
+  window.addEventListener('resize',()=>{
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
