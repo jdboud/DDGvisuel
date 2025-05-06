@@ -31,9 +31,9 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 // ─── 2. DOM Ready: hook parse button & sliders & dropdown ─────────────────
 window.addEventListener('DOMContentLoaded', () => {
   // seed from the HTML sliders
-  const xySlider = document.getElementById('xyFactor');
+  const xySlider = document.getElementById('xyFactor').value = 0.5;;
   const zSlider  = document.getElementById('zScaleFactor');
-  XY_FACTOR      = +xySlider.value;
+  XY_FACTOR = 0.5;
   Z_SCALE_FACTOR = +zSlider.value;
   xySlider.addEventListener('input', e => { XY_FACTOR = +e.target.value; renderVisualization(formattedData); });
   zSlider .addEventListener('input', e => { Z_SCALE_FACTOR = +e.target.value; renderVisualization(formattedData); });
@@ -45,6 +45,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const data = parseMyLines(raw);
     if (!data.length) return alert('No valid records found.');
     renderVisualization(data);
+    console.log('got records:', data.length, data);
   };
 
   // visualization type (if you want to support scatter / surface / etc.)
@@ -102,8 +103,9 @@ function createBarGraph() {
     const row = Math.floor(idx / wrap);
 
     // right→left
-    const x = (wrap - 1 - col) * XY_FACTOR * 2; // *2 to spread out a bit more
-    const y = row * XY_FACTOR * 2;              // same here
+    const spacing = XY_FACTOR * 4;   // e.g. each cell 2 units wide
+    const x = (wrap - 1 - col) * spacing;
+    const y = row * spacing;            // same here
     const h = d.rawReading / Z_SCALE_FACTOR;
 
     // make each bar 80% of the cell, but cell is now 2*XY_FACTOR
