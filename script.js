@@ -16,6 +16,9 @@ let formattedData = [],
 const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+camera.position.set(10, 10, 20);
+camera.lookAt(0, 0, 0);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xffffff, 1);
 document.body.appendChild(renderer.domElement);
@@ -93,24 +96,30 @@ function clearScene() {
 
 // ─── 6. Grid‐wrapped 6×30 Bar Graph ────────────────────────────────────────
 function createBarGraph() {
-  const wrap = 6; // columns
+  const wrap = 6;
   formattedData.forEach((d, idx) => {
     const col = idx % wrap;
     const row = Math.floor(idx / wrap);
 
-    // Right→Left X:
-    const x = (wrap - 1 - col) * XY_FACTOR;
-    const y =  row               * XY_FACTOR;
+    // right→left
+    const x = (wrap - 1 - col) * XY_FACTOR * 2; // *2 to spread out a bit more
+    const y = row * XY_FACTOR * 2;              // same here
     const h = d.rawReading / Z_SCALE_FACTOR;
 
-    const geo = new THREE.BoxGeometry(0.9*XY_FACTOR, 0.9*XY_FACTOR, h);
+    // make each bar 80% of the cell, but cell is now 2*XY_FACTOR
+    const cellSize = XY_FACTOR * 2;
+    const geo = new THREE.BoxGeometry(
+      cellSize * 0.8, 
+      cellSize * 0.8, 
+      h
+    );
     const mat = new THREE.MeshPhongMaterial({
       color:       new THREE.Color(colorScale(d.potVal)),
       transparent: true,
       opacity:     +document.getElementById('opacity').value
     });
     const bar = new THREE.Mesh(geo, mat);
-    bar.position.set(x, y, h/2); // lift so base sits on Z=0
+    bar.position.set(x, y, h/2);
 
     scene.add(bar);
     objects.push(bar);
