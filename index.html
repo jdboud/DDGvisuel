@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Data Visualization</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #fff; }
+    #inputArea {
+      position: absolute; top: 10px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.95);
+      padding: 10px; border-radius: 6px;
+      font-family: sans-serif; z-index: 10;
+    }
+    #rawData { width: 400px; height: 80px; font-family: monospace; }
+    #parseBtn { margin-top: 5px; }
+    .dropdown-container {
+      position: absolute; top: 120px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+    .controls {
+      position: absolute; bottom: 10px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-wrap: wrap; gap: 8px;
+      background: rgba(255,255,255,0.9); padding: 8px; border-radius: 6px;
+      font-family: sans-serif; z-index: 10;
+    }
+    .slider-container { display: flex; align-items: center; gap: 4px; }
+    .slider-container label { font-size: 0.85em; }
+  </style>
+</head>
+<body>
+
+  <!-- 1️⃣ Paste your data here ↓ -->
+  <div id="inputArea">
+    <textarea id="rawData" placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
+    <button id="parseBtn">Parse & Render</button>
+  </div>
+
+  <!-- 2️⃣ Choose visualization type ↓ -->
+  <div class="dropdown-container">
+    <select id="visualizationType">
+      <option value="bar">3D Bar</option>
+      <option value="scatter">3D Scatter</option>
+      <option value="surface">3D Surface</option>
+      <option value="heatmap">2D Heatmap</option>
+      <option value="line">3D Line</option>
+      <option value="3dheatmap">3D Heatmap</option>
+    </select>
+  </div>
+
+  <!-- 3️⃣ Sliders ↓ -->
+  <div class="controls">
+    <div class="slider-container">
+      <label for="zoom">Zoom</label>
+      <input type="range" id="zoom" min="10" max="200" value="50">
+    </div>
+    <div class="slider-container">
+      <label for="rotation">Rotation</label>
+      <input type="range" id="rotation" min="0" max="360" value="0">
+    </div>
+    <div class="slider-container">
+      <label for="opacity">Opacity</label>
+      <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.8">
+    </div>
+  </div>
+
+  <!-- libs + main script -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
