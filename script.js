@@ -1,8 +1,8 @@
 // ─── 1. Parse & button hook ─────────────────────────────────────────────────
 // how “wide” to spread X and Y (was 80)
-const XY_SPREAD = 800;
+const XY_FACTOR = 0.05;
 // how much to compress Z heights (was 1000)
-const Z_SCALE_FACTOR = 1000;
+const Z_SCALE_FACTOR = 500;
 
 function parseMyLines(text) {
   const recs = [];
@@ -44,7 +44,6 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 let formattedData = [];
 let objects       = [];
 let xCenter,yCenter,xRange,yRange,colorScale;
-const zScaleFactor = 1000;
 
 function computeScales() {
   const xE = d3.extent(formattedData, d=>d.X);
@@ -74,8 +73,8 @@ function createBarGraph(){
     const bar  = new THREE.Mesh(geom, m);
 
     bar.position.set(
-      (d.X - xCenter)/xRange * XY_SPREAD,
-      (d.Y - yCenter)/yRange * XY_SPREAD,
+      (d.X - xCenter)/xRange * XY_FACTOR,
+      (d.Y - yCenter)/yRange * XY_FACTOR,
       d.Z / (2 * Z_SCALE_FACTOR)
     );
 
@@ -94,8 +93,8 @@ function createScatterPlot(){
     });
     const pt   = new THREE.Mesh(geom, m);
     pt.position.set(
-      (d.X - xCenter)/xRange * XY_SPREAD,
-      (d.Y - yCenter)/yRange * XY_SPREAD,
+      (d.X - xCenter)/xRange * XY_FACTOR,
+      (d.Y - yCenter)/yRange * XY_FACTOR,
       d.Z / Z_SCALE_FACTOR
     );
     scene.add(pt);
@@ -104,7 +103,7 @@ function createScatterPlot(){
 }
 
 
-function createHeatmap(){
+function createHeatmap() {
   formattedData.forEach(d => {
     const geom = new THREE.PlaneGeometry(1, 1);
     const mat  = new THREE.MeshBasicMaterial({
@@ -115,8 +114,8 @@ function createHeatmap(){
     const mesh = new THREE.Mesh(geom, mat);
 
     mesh.position.set(
-      (d.X - xCenter) / xRange * XY_SPREAD,
-      (d.Y - yCenter) / yRange * XY_SPREAD,
+      (d.X - xCenter),
+      (d.Y - yCenter),
       0
     );
 
@@ -125,14 +124,44 @@ function createHeatmap(){
   });
 }
 
+function createLineGraph() {
+  const geom  = new THREE.BufferGeometry();
+  const verts = [];
+  const cols  = [];
+
+  formattedData.forEach(d => {
+    const x = (d.X - xCenter) * XY_FACTOR;
+    const y = (d.Y - yCenter) * XY_FACTOR;
+    const z = d.Z / Z_SCALE_FACTOR;
+    verts.push(x, y, z);
+
+    const c = new THREE.Color(colorScale(d.Density));
+    cols.push(c.r, c.g, c.b);
+  });
+
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geom.setAttribute('color',    new THREE.Float32BufferAttribute(cols,  3));
+
+  const mat  = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent:  true,
+    opacity:      +document.getElementById('opacity').value
+  });
+  const line = new THREE.Line(geom, mat);
+
+  scene.add(line);
+  objects.push(line);
+}
+
+
 function createLineGraph(){
   const geom  = new THREE.BufferGeometry();
   const verts = [];
   const cols  = [];
 
   formattedData.forEach(d => {
-    const x = (d.X - xCenter) / xRange * XY_SPREAD;
-    const y = (d.Y - yCenter) / yRange * XY_SPREAD;
+    const x = (d.X - xCenter) / xRange * XY_FACTOR;
+    const y = (d.Y - yCenter) / yRange * XY_FACTOR;
     const z = d.Z / Z_SCALE_FACTOR;
     verts.push(x, y, z);
 
