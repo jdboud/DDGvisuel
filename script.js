@@ -75,7 +75,7 @@ function parseMyLines(text) {
       reads.forEach((val,i) => recs.push({ rawReading: val, potVal: pots[i] }));
     }
   });
-  return recs;
+  return recs; // length = 4*5*9 = 180
 }
 
 // ─── 4. Render Dispatcher ───────────────────────────────────────────────────
@@ -83,7 +83,7 @@ function renderVisualization(data) {
   formattedData = data;
   computeColorScale();
   clearScene();
-  createBarGraph();  // only bar for now
+  createBarGraph();
 }
 
 // ─── 5. Helpers ─────────────────────────────────────────────────────────────
@@ -104,25 +104,26 @@ function createBarGraph() {
   const spacing = XY_FACTOR * 4;
   const rows    = Math.ceil(formattedData.length / wrap);
 
-  // center camera & controls on the grid
+  // ① center camera & controls on the grid
   const cx = (wrap - 1) * spacing / 2;
-  const cy = (rows  - 1) * spacing / 2;
-  camera.position.set(cx, cy, Math.max(cx, cy) * 1.5);
-  controls.target.set(cx, cy, 0);
+  const cz = (rows  - 1) * spacing / 2;
+  camera.position.set(cx, Math.max(cx, cz)*1.2, cz + spacing*0.3);
+  controls.target.set(cx, 0, cz);
   controls.update();
 
+  // ② create each bar (extruded along Y)
   formattedData.forEach((d, idx) => {
-    const col = idx % wrap;
-    const row = Math.floor(idx / wrap);
-    const x   = (wrap - 1 - col) * spacing; // right→left
-    const y   = row * spacing;
-    const h   = d.rawReading / Z_SCALE_FACTOR;
+    const col    = idx % wrap;
+    const row    = Math.floor(idx / wrap);
+    const x      = (wrap - 1 - col) * spacing; // right→left
+    const z      = row * spacing;              // front→back
+    const height = d.rawReading / Z_SCALE_FACTOR;
 
-    const cellSize = XY_FACTOR * 2;
+    // width & depth = 80% of spacing, height = Y-axis
     const geo = new THREE.BoxGeometry(
-      cellSize * 0.8,
-      cellSize * 0.8,
-      h
+      spacing * 0.8,
+      height,
+      spacing * 0.8
     );
     const mat = new THREE.MeshPhongMaterial({
       color:       new THREE.Color(colorScale(d.potVal)),
@@ -130,18 +131,20 @@ function createBarGraph() {
       opacity:     +document.getElementById('opacity').value
     });
     const bar = new THREE.Mesh(geo, mat);
-    bar.position.set(x, y, h/2); // lift base to z=0
+
+    // lift so base sits on Y=0
+    bar.position.set(x, height/2, z);
 
     scene.add(bar);
     objects.push(bar);
   });
 }
 
-// ─── 7. Animate + Resize (NO more camera.rotation overrides!) ───────────────
+// ─── 7. Animate + Resize ───────────────────────────────────────────────────
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
-  // zoom still works via camera.zoom
+  // zoom slider still works via camera.zoom
   camera.zoom = +document.getElementById('zoom').value / 50;
   camera.updateProjectionMatrix();
   renderer.render(scene, camera);
