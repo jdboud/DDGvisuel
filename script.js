@@ -1,11 +1,15 @@
 // ─── Globals ─────────────────────────────────────────────────────────────
-let formattedData = [], objects = [], colorScale;
+let formattedData = [],
+    objects       = [],
+    colorScale;
+
+// group that will hold all bars
+const container = new THREE.Group();
 
 // ─── 1. Three.js Setup ────────────────────────────────────────────────────
 const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -13,9 +17,13 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
 scene.add(new THREE.AmbientLight(0xfffff4,1));
 
+// add our container to the scene
+scene.add(container);
+
 // initial camera pos/orientation
 camera.position.set(2, 2, 13);
 camera.rotation.set(0, 0, 0);
+
 
 // ─── 2. Simple parser ──────────────────────────────────────────────────────
 function parseMyLines(text) {
@@ -44,11 +52,12 @@ function render(data) {
                  .domain([d3.min(allP), d3.max(allP)]);
 
   // clear old bars
-  objects.forEach(o=>scene.remove(o));
+  container.clear();
   objects = [];
 
-  // draw new bars
-  const wrap = 6, spacing = 0.5;
+  // draw new bars in container
+  const wrap    = 6;
+  const spacing = 0.5;
   formattedData.forEach((d,i)=>{
     const col = i % wrap,
           row = Math.floor(i/wrap),
@@ -63,9 +72,16 @@ function render(data) {
     });
     const bar = new THREE.Mesh(geo, mat);
     bar.position.set(x, y, h/2);
-    scene.add(bar);
+    container.add(bar);
     objects.push(bar);
   });
+
+  // --- recenter container so its grid midpoint sits at world‐origin ---
+  const cols  = wrap;
+  const rows  = Math.ceil(formattedData.length / wrap);
+  const cx    = (cols - 1)*spacing/2;
+  const cy    = (rows - 1)*spacing/2;
+  container.position.set(-cx, -cy, 0);
 }
 
 // ─── 4. Hooks ───────────────────────────────────────────────────────────────
