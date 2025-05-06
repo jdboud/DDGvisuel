@@ -2,39 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>3D Data Visualization</title>
+  <title>3D Data Visualization with Tilt</title>
   <style>
     body { margin: 0; overflow: hidden; background: #fff; }
     #inputArea {
-      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-      background: rgba(255,255,255,0.95); padding: 10px; border-radius: 6px;
+      position: absolute; top: 10px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.95);
+      padding: 10px; border-radius: 6px;
       font-family: sans-serif; z-index: 10;
     }
     #rawData { width: 400px; height: 80px; font-family: monospace; }
-    #parseBtn { margin-top: 5px; }
-    #legend {
-      position: absolute; bottom: 10px; right: 10px;
-      width: 200px; height: 20px; border: 1px solid #333;
-      background: linear-gradient(to right, yellow, red);
-      font-size: 0.75em; color: #333; text-align: center;
-      line-height: 20px; z-index: 10;
-    }
+    #controls { margin-top: 8px; }
+    #controls label { margin-right: 6px; }
   </style>
 </head>
 <body>
 
+  <!-- Paste & Controls -->
   <div id="inputArea">
-    <textarea id="rawData" placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
-    <button id="parseBtn">Parse & Render</button>
+    <textarea id="rawData"
+      placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
+    <div id="controls">
+      <button id="parseBtn">Parse & Render</button>
+      <label for="tilt">Tilt</label>
+      <input type="range" id="tilt" min="-45" max="45" value="0">
+    </div>
   </div>
 
-  <div id="legend">Low ↑→ High ↓</div>
-
-  <!-- Three.js + D3 + dat.GUI -->
+  <!-- Three.js + D3 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
