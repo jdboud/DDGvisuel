@@ -1,10 +1,11 @@
 // ─── Globals ─────────────────────────────────────────────────────────────
 let formattedData = [], objects = [], colorScale;
 
-// ─── 1. Three.js Setup ───────────────────────────────────────────────────
+// ─── 1. Three.js Setup ────────────────────────────────────────────────────
 const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -12,16 +13,15 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
 scene.add(new THREE.AmbientLight(0xfffff4,1));
 
-// initial camera pos
+// initial camera pos/orientation
 camera.position.set(2, 2, 13);
-camera.rotation.x = 0;
-camera.rotation.y = 0;
+camera.rotation.set(0, 0, 0);
 
 // ─── 2. Simple parser ──────────────────────────────────────────────────────
 function parseMyLines(text) {
   const recs = [];
   text.split(/\r?\n/).forEach(line=>{
-    for(let r=1;r<=4;r++){
+    for(let r=1; r<=4; r++){
       const m = line.match(
         new RegExp(`Receiver\\s*${r}\\s*:\\s*([\\d,\\s]+)\\s*-\\s*PotVals\\s*:\\s*([\\d,\\s]+)`)
       );
@@ -37,19 +37,25 @@ function parseMyLines(text) {
 // ─── 3. Render dispatcher ───────────────────────────────────────────────────
 function render(data) {
   formattedData = data;
+
   // build color scale
   const allP = formattedData.map(d=>d.potVal);
   colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
                  .domain([d3.min(allP), d3.max(allP)]);
-  // clear old
+
+  // clear old bars
   objects.forEach(o=>scene.remove(o));
   objects = [];
-  // draw
-  const wrap = 6, spacing = 2.5;
+
+  // draw new bars
+  const wrap = 6, spacing = 0.5;
   formattedData.forEach((d,i)=>{
-    const col = i % wrap, row = Math.floor(i/wrap);
-    const x = (wrap-1-col)*spacing, y = row*spacing;
-    const h = d.rawReading / 2000;
+    const col = i % wrap,
+          row = Math.floor(i/wrap),
+          x   = (wrap-1-col)*spacing,
+          y   = row*spacing,
+          h   = d.rawReading / 2000;
+
     const geo = new THREE.BoxGeometry(0.4, 0.4, h);
     const mat = new THREE.MeshPhongMaterial({
       color: new THREE.Color(colorScale(d.potVal)),
@@ -64,29 +70,37 @@ function render(data) {
 
 // ─── 4. Hooks ───────────────────────────────────────────────────────────────
 document.getElementById('parseBtn').onclick = () => {
-  const txt = document.getElementById('rawData').value;
+  const txt = document.getElementById('rawData').value.trim();
   const d   = parseMyLines(txt);
   if (d.length) render(d);
   else alert('No valid records found.');
 };
 
-// X‐tilt slider
+// X‐tilt
 document.getElementById('tiltX').addEventListener('input', e => {
   camera.rotation.x = +e.target.value * Math.PI/180;
 });
-// **Y‐tilt slider**
+// Y‐tilt
 document.getElementById('tiltY').addEventListener('input', e => {
   camera.rotation.y = +e.target.value * Math.PI/180;
 });
+// Zoom
+document.getElementById('zoom').addEventListener('input', e => {
+  camera.zoom = +e.target.value / 50;
+  camera.updateProjectionMatrix();
+});
+// Rotate around Z
+document.getElementById('rotateZ').addEventListener('input', e => {
+  camera.rotation.z = +e.target.value * Math.PI/180;
+});
 
-// ─── 5. Animate ─────────────────────────────────────────────────────────────
+// ─── 5. Animate & Resize ───────────────────────────────────────────────────
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
 }
 animate();
 
-// resize
 window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth/innerHeight;
