@@ -1,25 +1,51 @@
-// ─── 0. Constants & Globals ─────────────────────────────────────────────────
-let XY_FACTOR      = 0.05;    // scales raw X/Y distances
-let Z_SCALE_FACTOR = 1500;    // scales raw Z heights
+// ─── 0. Globals ──────────────────────────────────────────────────────────────
+let XY_FACTOR, Z_SCALE_FACTOR;
+let formattedData = [], objects = [], xCenter, yCenter, colorScale;
 
-// Three.js setup
+// ─── 1. Three.js Setup ───────────────────────────────────────────────────────
 const scene    = new THREE.Scene();
-const camera   = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(innerWidth, innerHeight);
 renderer.setClearColor(0xffffff, 1);
 document.body.appendChild(renderer.domElement);
 
-// Lights
-scene.add(new THREE.DirectionalLight(0xffffff, 1).position.set(0,1,1));
-scene.add(new THREE.AmbientLight(0xfffff4, 1));
+scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
+scene.add(new THREE.AmbientLight(0xfffff4,1));
 
-// Data containers
-let formattedData = [];
-let objects       = [];
-let xCenter, yCenter, colorScale;
+// ─── 2. DOM‑Ready Wiring ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // grab the sliders & initialize factors
+  const xySlider = document.getElementById('xyFactor');
+  const zSlider  = document.getElementById('zScaleFactor');
+  XY_FACTOR      = +xySlider.value;
+  Z_SCALE_FACTOR = +zSlider.value;
 
-// ─── 1. Parse function & Button Hook ────────────────────────────────────────
+  // live‑update when user drags them
+  xySlider.addEventListener('input', e => {
+    XY_FACTOR = +e.target.value;
+    renderVisualization(formattedData);
+  });
+  zSlider.addEventListener('input', e => {
+    Z_SCALE_FACTOR = +e.target.value;
+    renderVisualization(formattedData);
+  });
+
+  // parse button
+  document.getElementById('parseBtn').onclick = () => {
+    const raw = document.getElementById('rawData').value.trim();
+    if (!raw) return alert('Paste your data first.');
+    const data = parseMyLines(raw);
+    if (!data.length) return alert('No valid records found.');
+    renderVisualization(data);
+  };
+
+  // visualization‐type dropdown
+  document.getElementById('visualizationType')
+    .addEventListener('change', () => renderVisualization(formattedData));
+});
+
+// ─── 3. Parsing ───────────────────────────────────────────────────────────────
 function parseMyLines(text) {
   const recs = [];
   text.split(/\r?\n/).forEach(line => {
@@ -28,8 +54,8 @@ function parseMyLines(text) {
     );
     if (!m) return;
     const X = +m[1], Y = +m[2];
-    const zs = m[3].split(',').map(s=>+s.trim());
-    const ds = m[4].split(',').map(s=>+s.trim());
+    const zs = m[3].split(',').map(s => +s.trim());
+    const ds = m[4].split(',').map(s => +s.trim());
     zs.forEach((z,i) => {
       if (ds[i] > 0) recs.push({ X, Y, Z: z, Density: ds[i] });
     });
@@ -37,45 +63,25 @@ function parseMyLines(text) {
   return recs;
 }
 
-document.getElementById('parseBtn').onclick = () => {
-  const raw = document.getElementById('rawData').value.trim();
-  if (!raw) return alert('Paste your data first.');
-  const data = parseMyLines(raw);
-  if (!data.length) return alert('No valid records found.');
-  renderVisualization(data);
-};
-
-// live‐update scales
-document.getElementById('xyFactor').addEventListener('input', e => {
-  XY_FACTOR = +e.target.value;
-  renderVisualization(formattedData);
-});
-document.getElementById('zScaleFactor').addEventListener('input', e => {
-  Z_SCALE_FACTOR = +e.target.value;
-  renderVisualization(formattedData);
-});
-
-
-// ─── 2. Compute scales (centers + color) ──────────────────────────────────
+// ─── 4. Helpers ──────────────────────────────────────────────────────────────
 function computeScales() {
   const xE = d3.extent(formattedData, d=>d.X);
   const yE = d3.extent(formattedData, d=>d.Y);
-  xCenter = (xE[0] + xE[1]) / 2;
-  yCenter = (yE[0] + yE[1]) / 2;
+  xCenter   = (xE[0] + xE[1]) / 2;
+  yCenter   = (yE[0] + yE[1]) / 2;
   colorScale = d3.scaleSequential(d3.interpolateRgb("white","salmon"))
                  .domain(d3.extent(formattedData, d=>d.Density));
 }
 
-// ─── 3. Clear scene ─────────────────────────────────────────────────────────
 function clearScene() {
   objects.forEach(o => scene.remove(o));
   objects = [];
 }
 
-// ─── 4a. Bar Graph ──────────────────────────────────────────────────────────
+// ─── 5. Plotters ─────────────────────────────────────────────────────────────
 function createBarGraph(){
   formattedData.forEach(d => {
-    const geom = new THREE.BoxGeometry(1, 1, d.Z / Z_SCALE_FACTOR);
+    const geom = new THREE.BoxGeometry(1,1,d.Z / Z_SCALE_FACTOR);
     const mat  = new THREE.MeshPhongMaterial({
       color:       new THREE.Color(colorScale(d.Density)),
       transparent: true,
@@ -92,10 +98,9 @@ function createBarGraph(){
   });
 }
 
-// ─── 4b. Scatter Plot ───────────────────────────────────────────────────────
 function createScatterPlot(){
   formattedData.forEach(d => {
-    const geom = new THREE.SphereGeometry(d.Z / Z_SCALE_FACTOR / 2, 16, 16);
+    const geom = new THREE.SphereGeometry(d.Z / Z_SCALE_FACTOR / 2,16,16);
     const mat  = new THREE.MeshPhongMaterial({
       color:       new THREE.Color(colorScale(d.Density)),
       transparent: true,
@@ -112,7 +117,6 @@ function createScatterPlot(){
   });
 }
 
-// ─── 4c. Heatmap ────────────────────────────────────────────────────────────
 function createHeatmap(){
   formattedData.forEach(d => {
     const geom = new THREE.PlaneGeometry(1,1);
@@ -132,11 +136,9 @@ function createHeatmap(){
   });
 }
 
-// ─── 4d. Line Graph ─────────────────────────────────────────────────────────
 function createLineGraph(){
   const geom  = new THREE.BufferGeometry();
   const verts = [], cols = [];
-
   formattedData.forEach(d => {
     verts.push(
       (d.X - xCenter) * XY_FACTOR,
@@ -144,54 +146,48 @@ function createLineGraph(){
       d.Z / Z_SCALE_FACTOR
     );
     const c = new THREE.Color(colorScale(d.Density));
-    cols.push(c.r, c.g, c.b);
+    cols.push(c.r,c.g,c.b);
   });
-
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geom.setAttribute('color',    new THREE.Float32BufferAttribute(cols,  3));
-
-  const mat  = new THREE.LineBasicMaterial({
+  geom.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  geom.setAttribute('color',   new THREE.Float32BufferAttribute(cols, 3));
+  const mat = new THREE.LineBasicMaterial({
     vertexColors: true,
     transparent:  true,
     opacity:      +document.getElementById('opacity').value
   });
   const line = new THREE.Line(geom, mat);
-
   scene.add(line);
   objects.push(line);
 }
 
-// ─── 5. Render dispatcher ───────────────────────────────────────────────────
-function renderVisualization(data) {
+// ─── 6. Dispatcher ──────────────────────────────────────────────────────────
+function renderVisualization(data){
   formattedData = data;
   computeScales();
   clearScene();
-  const type = document.getElementById('visualizationType').value;
-  if (type === 'bar')      createBarGraph();
-  else if (type === 'scatter') createScatterPlot();
-  else if (type === 'heatmap')  createHeatmap();
-  else if (type === 'line')     createLineGraph();
+  switch(document.getElementById('visualizationType').value){
+    case 'bar':     createBarGraph();    break;
+    case 'scatter': createScatterPlot(); break;
+    case 'heatmap': createHeatmap();     break;
+    case 'line':    createLineGraph();   break;
+  }
 }
 
-// redraw on type change
-document.getElementById('visualizationType')
-        .addEventListener('change', ()=>renderVisualization(formattedData));
-
-// ─── 6. Camera + Animate + Resize ────────────────────────────────────────────
-camera.position.set(50, 50, 50);
+// ─── 7. Animate + Resize ─────────────────────────────────────────────────────
+camera.position.set(50,50,50);
 camera.lookAt(scene.position);
 
 function animate(){
   requestAnimationFrame(animate);
-  camera.zoom = +document.getElementById('zoom').value / 50;
+  camera.zoom = +document.getElementById('zoom').value/50;
   camera.updateProjectionMatrix();
-  camera.rotation.z = +document.getElementById('rotation').value * Math.PI/180;
-  renderer.render(scene, camera);
+  camera.rotation.z = +document.getElementById('rotation').value*Math.PI/180;
+  renderer.render(scene,camera);
 }
 animate();
 
 window.addEventListener('resize', () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth/window.innerHeight;
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
 });
