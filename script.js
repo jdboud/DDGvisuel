@@ -57,7 +57,7 @@ function render(data) {
 
   // draw new bars in container
   const wrap    = 6;
-  const spacing = 0.5;
+  const spacing = 1.5;
   formattedData.forEach((d,i)=>{
     const col = i % wrap,
           row = Math.floor(i/wrap),
