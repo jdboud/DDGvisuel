@@ -65,17 +65,20 @@ function clearScene() {
 
 function createBarGraph(){
   formattedData.forEach(d=>{
-    const g = new THREE.BoxGeometry(1,1,d.Z/zScaleFactor);
-    const m = new THREE.MeshPhongMaterial({ 
-      color: new THREE.Color(colorScale(d.Density)), 
-      transparent:true, opacity:+document.getElementById('opacity').value 
+    const geom = new THREE.BoxGeometry(1, 1, d.Z / Z_SCALE_FACTOR);
+    const m    = new THREE.MeshPhongMaterial({
+      color:       new THREE.Color(colorScale(d.Density)),
+      transparent: true,
+      opacity:     +document.getElementById('opacity').value
     });
-    const bar = new THREE.Mesh(g,m);
+    const bar  = new THREE.Mesh(geom, m);
+
     bar.position.set(
-      (d.X-xCenter)/xRange*80,
-      (d.Y-yCenter)/yRange*80,
-      d.Z/(2*zScaleFactor)
+      (d.X - xCenter)/xRange * XY_SPREAD,
+      (d.Y - yCenter)/yRange * XY_SPREAD,
+      d.Z / (2 * Z_SCALE_FACTOR)
     );
+
     scene.add(bar);
     objects.push(bar);
   });
@@ -83,53 +86,72 @@ function createBarGraph(){
 
 function createScatterPlot(){
   formattedData.forEach(d=>{
-    const g = new THREE.SphereGeometry(d.Z/zScaleFactor/2,16,16);
-    const m = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(colorScale(d.Density)),
-      transparent:true, opacity:+document.getElementById('opacity').value
+    const geom = new THREE.SphereGeometry(d.Z / Z_SCALE_FACTOR / 2, 16, 16);
+    const m    = new THREE.MeshPhongMaterial({
+      color:       new THREE.Color(colorScale(d.Density)),
+      transparent: true,
+      opacity:     +document.getElementById('opacity').value
     });
-    const pt = new THREE.Mesh(g,m);
+    const pt   = new THREE.Mesh(geom, m);
     pt.position.set(
-      (d.X-xCenter)/xRange*80,
-      (d.Y-yCenter)/yRange*80,
-      d.Z/zScaleFactor
+      (d.X - xCenter)/xRange * XY_SPREAD,
+      (d.Y - yCenter)/yRange * XY_SPREAD,
+      d.Z / Z_SCALE_FACTOR
     );
-    scene.add(pt); objects.push(pt);
+    scene.add(pt);
+    objects.push(pt);
   });
 }
 
+
 function createHeatmap(){
-  formattedData.forEach(d=>{
-    const g = new THREE.PlaneGeometry(1,1);
-    const m = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(colorScale(d.Density)), 
-      transparent:true, opacity:+document.getElementById('opacity').value
+  formattedData.forEach(d => {
+    const geom = new THREE.PlaneGeometry(1, 1);
+    const mat  = new THREE.MeshBasicMaterial({
+      color:       new THREE.Color(colorScale(d.Density)),
+      transparent: true,
+      opacity:     +document.getElementById('opacity').value
     });
-    const p = new THREE.Mesh(g,m);
-    p.position.set(
-      (d.X-xCenter)/xRange*80,
-      (d.Y-yCenter)/yRange*80,
+    const mesh = new THREE.Mesh(geom, mat);
+
+    mesh.position.set(
+      (d.X - xCenter) / xRange * XY_SPREAD,
+      (d.Y - yCenter) / yRange * XY_SPREAD,
       0
     );
-    scene.add(p); objects.push(p);
+
+    scene.add(mesh);
+    objects.push(mesh);
   });
 }
 
 function createLineGraph(){
-  const geom = new THREE.BufferGeometry();
-  const verts = [], cols = [];
-  formattedData.forEach(d=>{
-    const x=(d.X-xCenter)/xRange*80;
-    const y=(d.Y-yCenter)/yRange*80;
-    verts.push(x,y,d.Z/zScaleFactor);
+  const geom  = new THREE.BufferGeometry();
+  const verts = [];
+  const cols  = [];
+
+  formattedData.forEach(d => {
+    const x = (d.X - xCenter) / xRange * XY_SPREAD;
+    const y = (d.Y - yCenter) / yRange * XY_SPREAD;
+    const z = d.Z / Z_SCALE_FACTOR;
+    verts.push(x, y, z);
+
     const c = new THREE.Color(colorScale(d.Density));
-    cols.push(c.r,c.g,c.b);
+    cols.push(c.r, c.g, c.b);
   });
-  geom.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
-  geom.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
-  const mat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true, opacity:+document.getElementById('opacity').value });
-  const line = new THREE.Line(geom,mat);
-  scene.add(line); objects.push(line);
+
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geom.setAttribute('color',    new THREE.Float32BufferAttribute(cols,  3));
+
+  const mat  = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent:  true,
+    opacity:      +document.getElementById('opacity').value
+  });
+  const line = new THREE.Line(geom, mat);
+
+  scene.add(line);
+  objects.push(line);
 }
 
 function renderVisualization(data){
