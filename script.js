@@ -1,31 +1,44 @@
-// ─── Globals ─────────────────────────────────────────────────────────────
+// ─── Globals ───────────────────────────────────────────────────────────────
 let formattedData = [],
     objects       = [],
     colorScale;
 
-// group that will hold all bars
-const container = new THREE.Group();
+// spherical angles & roll
+let tiltX = 0,    // pitch, from −90…+90
+    tiltY = 0,    // yaw,   from −180…+180
+    rollZ = 0;    // roll   around view axis
 
-// ─── 1. Three.js Setup ────────────────────────────────────────────────────
+// remember our “radius” from the origin
+// (this is the distance your camera was initially placed at)
+const initialR = Math.sqrt(1*1 + 1*1 + 15*15); // based on camera.position.set(1,1,15)
+
+
+// ─── 1. Three.js Setup ──────────────────────────────────────────────────────
 const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+// add a group to hold all our bars
+const container = new THREE.Group();
+scene.add(container);
 
 // lights
 scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
 scene.add(new THREE.AmbientLight(0xfffff4,1));
 
-// add our container to the scene
-scene.add(container);
-
-// initial camera pos/orientation
+// initial camera position (must match initialR calculation!)
 camera.position.set(1, 1, 15);
-camera.rotation.set(0, 0, 0);
+camera.up.set(1,0,0); // up vector will be overridden per rollZ
+camera.lookAt(0,0,0);
+controls.enabled = false; // we’ll drive the camera manually
 
 
-// ─── 2. Simple parser ──────────────────────────────────────────────────────
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+
+// ─── 2. Parser ──────────────────────────────────────────────────────────────
 function parseMyLines(text) {
   const recs = [];
   text.split(/\r?\n/).forEach(line=>{
@@ -42,7 +55,8 @@ function parseMyLines(text) {
   return recs;
 }
 
-// ─── 3. Render dispatcher ───────────────────────────────────────────────────
+
+// ─── 3. Render dispatcher ────────────────────────────────────────────────────
 function render(data) {
   formattedData = data;
 
@@ -55,9 +69,10 @@ function render(data) {
   container.clear();
   objects = [];
 
-  // draw new bars in container
-  const wrap    = 6;
-  const spacing = 1.5;
+  // draw new bars
+  const wrap    = 6,
+        spacing = 1.5;
+
   formattedData.forEach((d,i)=>{
     const col = i % wrap,
           row = Math.floor(i/wrap),
@@ -65,9 +80,9 @@ function render(data) {
           y   = row*spacing,
           h   = d.rawReading / 2000;
 
-    const geo = new THREE.BoxGeometry(0.4, 0.4, h);
+    const geo = new THREE.BoxGeometry(0.4,0.4,h);
     const mat = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(colorScale(d.potVal)),
+      color:       new THREE.Color(colorScale(d.potVal)),
       transparent: true, opacity: 0.8
     });
     const bar = new THREE.Mesh(geo, mat);
@@ -76,15 +91,40 @@ function render(data) {
     objects.push(bar);
   });
 
-  // --- recenter container so its grid midpoint sits at world‐origin ---
-  const cols  = wrap;
-  const rows  = Math.ceil(formattedData.length / wrap);
-  const cx    = (cols - 1)*spacing/2;
-  const cy    = (rows - 1)*spacing/2;
+  // recenter container around origin
+  const cols = wrap,
+        rows = Math.ceil(formattedData.length / wrap),
+        cx   = (cols-1)*spacing/2,
+        cy   = (rows-1)*spacing/2;
+
   container.position.set(-cx, -cy, 0);
+
+  // update camera once
+  updateCamera();
 }
 
-// ─── 4. Hooks ───────────────────────────────────────────────────────────────
+
+// ─── 4. Camera update (orbit about origin) ──────────────────────────────────
+function updateCamera() {
+  // convert spherical coords
+  const phi   = THREE.MathUtils.degToRad(90 - tiltX);   // polar angle
+  const theta = THREE.MathUtils.degToRad(tiltY);        // azimuth
+
+  // new camera position
+  camera.position.x = initialR * Math.sin(phi) * Math.cos(theta);
+  camera.position.y = initialR * Math.sin(phi) * Math.sin(theta);
+  camera.position.z = initialR * Math.cos(phi);
+
+  // apply roll around view axis by rotating camera.up
+  const rz = THREE.MathUtils.degToRad(rollZ);
+  camera.up.set(Math.cos(rz), Math.sin(rz), 0);
+
+  // look at center
+  camera.lookAt(0,0,0);
+}
+
+
+// ─── 5. UI Hooks ────────────────────────────────────────────────────────────
 document.getElementById('parseBtn').onclick = () => {
   const txt = document.getElementById('rawData').value.trim();
   const d   = parseMyLines(txt);
@@ -92,25 +132,25 @@ document.getElementById('parseBtn').onclick = () => {
   else alert('No valid records found.');
 };
 
-// X‐tilt
 document.getElementById('tiltX').addEventListener('input', e => {
-  camera.rotation.x = +e.target.value * Math.PI/180;
+  tiltX = +e.target.value;
+  updateCamera();
 });
-// Y‐tilt
 document.getElementById('tiltY').addEventListener('input', e => {
-  camera.rotation.y = +e.target.value * Math.PI/180;
+  tiltY = +e.target.value;
+  updateCamera();
 });
-// Zoom
+document.getElementById('rotateZ').addEventListener('input', e => {
+  rollZ = +e.target.value;
+  updateCamera();
+});
 document.getElementById('zoom').addEventListener('input', e => {
   camera.zoom = +e.target.value / 50;
   camera.updateProjectionMatrix();
 });
-// Rotate around Z
-document.getElementById('rotateZ').addEventListener('input', e => {
-  camera.rotation.z = +e.target.value * Math.PI/180;
-});
 
-// ─── 5. Animate & Resize ───────────────────────────────────────────────────
+
+// ─── 6. Animate & Resize ────────────────────────────────────────────────────
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
