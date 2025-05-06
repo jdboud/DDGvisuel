@@ -14,20 +14,181 @@
     }
     #rawData { width: 400px; height: 80px; font-family: monospace; }
     #parseBtn { margin-top: 5px; }
+
+    .dropdown-container {
+      position: absolute; top: 120px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    .controls {
+      position: absolute; bottom: 10px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-wrap: wrap; gap: 8px;
+      background: rgba(255,255,255,0.9); padding: 8px; border-radius: 6px;
+      font-family: sans-serif; z-index: 10;
+    }
+    .slider-container { display: flex; align-items: center; gap: 4px; }
+    .slider-container label { font-size: 0.85em; }
   </style>
 </head>
 <body>
 
-  <!-- Paste your data here -->
+  <!-- 1️⃣ Paste your data here ↓ -->
   <div id="inputArea">
-    <textarea id="rawData"
-      placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
+    <textarea id="rawData" placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
     <button id="parseBtn">Parse & Render</button>
   </div>
 
-  <!-- Three.js + D3 -->
+  <!-- 2️⃣ Choose visualization type ↓ -->
+  <div class="dropdown-container">
+    <select id="visualizationType">
+      <option value="bar">3D Bar</option>
+      <!-- future: scatter, surface, etc. -->
+    </select>
+  </div>
+
+  <!-- 3️⃣ Sliders ↓ -->
+  <div class="controls">
+    <div class="slider-container">
+      <label for="zoom">Zoom</label>
+      <input type="range" id="zoom" min="10" max="200" value="50">
+    </div>
+    <div class="slider-container">
+      <label for="tilt">Tilt</label>
+      <input type="range" id="tilt" min="0" max="90" value="30">
+    </div>
+    <div class="slider-container">
+      <label for="xScale">X Width</label>
+      <input type="range" id="xScale" min="0.01" max="1" step="0.01" value="0.5">
+    </div>
+    <div class="slider-container">
+      <label for="yScale">Y Width</label>
+      <input type="range" id="yScale" min="0.01" max="1" step="0.01" value="0.5">
+    </div>
+    <div class="slider-container">
+      <label for="cellFactor">Col Width</label>
+      <input type="range" id="cellFactor" min="0.1" max="1" step="0.1" value="0.8">
+    </div>
+    <div class="slider-container">
+      <label for="colorExp">Color Int&#120;ensity</label>
+      <input type="range" id="colorExp" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <div class="slider-container">
+      <label for="opacity">Opacity</label>
+      <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.8">
+    </div>
+  </div>
+
+  <!-- libs + inline script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    // ─── Globals ─────────────────────────────────────────────────
+    let formattedData = [], objects = [];
+    let X_FACTOR = 0.5, Y_FACTOR = 0.5;
+    let CELL_FACTOR = 0.8, COLOR_EXP = 1;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({antialias:true});
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setClearColor(0xffffff,1);
+    document.body.appendChild(renderer.domElement);
+    scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
+    scene.add(new THREE.AmbientLight(0xfffff4,1));
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // hook sliders
+      document.getElementById('zoom').addEventListener('input', e => updateCamera());
+      document.getElementById('tilt').addEventListener('input', e => updateCamera());
+      document.getElementById('xScale').addEventListener('input', e => { X_FACTOR = +e.target.value; renderVisualization(formattedData); });
+      document.getElementById('yScale').addEventListener('input', e => { Y_FACTOR = +e.target.value; renderVisualization(formattedData); });
+      document.getElementById('cellFactor').addEventListener('input', e => { CELL_FACTOR = +e.target.value; renderVisualization(formattedData); });
+      document.getElementById('colorExp').addEventListener('input', e => { COLOR_EXP = +e.target.value; renderVisualization(formattedData); });
+      document.getElementById('opacity').addEventListener('input', e => renderVisualization(formattedData));
+
+      // parse button
+      document.getElementById('parseBtn').onclick = () => {
+        const raw = document.getElementById('rawData').value.trim();
+        if (!raw) return alert('Paste your data first.');
+        const data = parseMyLines(raw);
+        if (!data.length) return alert('No valid records found.');
+        renderVisualization(data);
+      };
+
+      // initial camera
+      camera.position.set(0,0,10);
+      updateCamera();
+    });
+
+    function updateCamera(){
+      const zoom = +document.getElementById('zoom').value;
+      const tilt = +document.getElementById('tilt').value * Math.PI/180;
+      camera.zoom = zoom/50;
+      camera.rotation.x = tilt;
+      camera.updateProjectionMatrix();
+    }
+
+    function parseMyLines(text){
+      const recs=[];
+      text.split(/\r?\n/).filter(l=>l.trim()).forEach(line=>{
+        for(let r=1;r<=4;r++){
+          const m=line.match(new RegExp(`Receiver\\s*${r}\\s*:\\s*([\\d,\\s]+?)\\s*-\\s*PotVals\\s*:\\s*([\\d,\\s]+)`));
+          if(!m) continue;
+          const reads=m[1].split(',').map(s=>+s.trim());
+          const pots =m[2].split(',').map(s=>+s.trim());
+          reads.forEach((v,i)=>recs.push({rawReading:v,potVal:pots[i]}));
+        }
+      });
+      return recs;
+    }
+
+    function renderVisualization(data){
+      formattedData=data;
+      clearScene();
+      createBarGraph();
+    }
+
+    function clearScene(){ objects.forEach(o=>scene.remove(o)); objects=[]; }
+
+    function createBarGraph(){
+      if(!formattedData) return;
+      const wrap=6;
+      // compute min/max pot
+      const pots=formattedData.map(d=>d.potVal);
+      const minP=d3.min(pots), maxP=d3.max(pots);
+      const spacingX = X_FACTOR * 4;
+      const spacingY = Y_FACTOR * 4;
+
+      // center camera & controls
+      const cols=wrap, rows=Math.ceil(formattedData.length/wrap);
+      const cx=(cols-1)*spacingX/2, cy=(rows-1)*spacingY/2;
+      camera.position.set(cx,cy,Math.max(cx,cy)*1.5);
+      controls.target.set(cx,cy,0);
+      controls.update();
+
+      formattedData.forEach((d,idx)=>{
+        const col=idx%wrap, row=Math.floor(idx/wrap);
+        const x=(wrap-1-col)*spacingX;
+        const y=row*spacingY;
+        const h=d.rawReading/ Z_SCALE_FACTOR;
+        const cellX=spacingX*CELL_FACTOR;
+        const cellY=spacingY*CELL_FACTOR;
+        const geo=new THREE.BoxGeometry(cellX*0.8, cellY*0.8, h);
+        // color intensity via exponent
+        const norm=(d.potVal-minP)/(maxP-minP);
+        const val=minP + Math.pow(norm,COLOR_EXP)*(maxP-minP);
+        const mat=new THREE.MeshPhongMaterial({ color:new THREE.Color(d3.interpolateYlOrRd(val/maxP)), transparent:true, opacity:+document.getElementById('opacity').value });
+        const bar=new THREE.Mesh(geo,mat);
+        bar.position.set(x,y,h/2);
+        scene.add(bar); objects.push(bar);
+      });
+    }
+
+    (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
+  </script>
 </body>
 </html>
