@@ -45,7 +45,7 @@ function render(data) {
   objects.forEach(o=>scene.remove(o));
   objects = [];
   // draw
-  const wrap = 6, spacing = 0.5;
+  const wrap = 6, spacing = 2.5;
   formattedData.forEach((d,i)=>{
     const col = i % wrap, row = Math.floor(i/wrap);
     const x = (wrap-1-col)*spacing, y = row*spacing;
