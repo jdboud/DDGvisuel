@@ -1,193 +1,95 @@
-// ─── 0. Globals ──────────────────────────────────────────────────────────────
-let XY_FACTOR, Z_SCALE_FACTOR;
-let formattedData = [], objects = [], xCenter, yCenter, colorScale;
-
-// ─── 1. Three.js Setup ───────────────────────────────────────────────────────
-const scene    = new THREE.Scene();
-const camera   = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
-renderer.setClearColor(0xffffff, 1);
-document.body.appendChild(renderer.domElement);
-
-scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(0,1,1));
-scene.add(new THREE.AmbientLight(0xfffff4,1));
-
-// ─── 2. DOM‑Ready Wiring ─────────────────────────────────────────────────────
+// ─── 1. DOM Ready ────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  // grab the sliders & initialize factors
-  const xySlider = document.getElementById('xyFactor');
-  const zSlider  = document.getElementById('zScaleFactor');
-  XY_FACTOR      = +xySlider.value;
-  Z_SCALE_FACTOR = +zSlider.value;
-
-  // live‑update when user drags them
-  xySlider.addEventListener('input', e => {
-    XY_FACTOR = +e.target.value;
-    renderVisualization(formattedData);
-  });
-  zSlider.addEventListener('input', e => {
-    Z_SCALE_FACTOR = +e.target.value;
-    renderVisualization(formattedData);
-  });
-
-  // parse button
   document.getElementById('parseBtn').onclick = () => {
     const raw = document.getElementById('rawData').value.trim();
     if (!raw) return alert('Paste your data first.');
-    const data = parseMyLines(raw);
+    const data = parseLines(raw);
     if (!data.length) return alert('No valid records found.');
-    renderVisualization(data);
+    renderHeatmap(data);
   };
-
-  // visualization‐type dropdown
-  document.getElementById('visualizationType')
-    .addEventListener('change', () => renderVisualization(formattedData));
 });
 
-// ─── 3. Parsing ───────────────────────────────────────────────────────────────
-function parseMyLines(text) {
+// ─── 2. Parse the raw lines into {receiver, index, potVal} records ──────────
+function parseLines(text) {
   const recs = [];
   text.split(/\r?\n/).forEach(line => {
-    const m = line.match(
-      /Y1:\s*(\d+)\s*Y2:\s*(\d+).*?Receiver\s*1:\s*([\d,\s]+)\s*-\s*PotVals:\s*([\d,\s]+)/
-    );
-    if (!m) return;
-    const X = +m[1], Y = +m[2];
-    const zs = m[3].split(',').map(s => +s.trim());
-    const ds = m[4].split(',').map(s => +s.trim());
-    zs.forEach((z,i) => {
-      if (ds[i] > 0) recs.push({ X, Y, Z: z, Density: ds[i] });
-    });
+    // find all four receivers in one pass
+    for (let r = 1; r <= 4; r++) {
+      // e.g. “Receiver 2: 11179, 11312… – PotVals: 22, 19…”
+      const re = new RegExp(
+        `Receiver\\s*${r}\\s*:\\s*([\\d,\\s]+?)\\s*-\\s*PotVals\\s*:\\s*([\\d,\\s]+)`
+      );
+      const m = re.exec(line);
+      if (!m) continue;
+      const zs = m[1].split(',').map(s => +s.trim());   // you can ignore the actual readings if you want
+      const ps = m[2].split(',').map(s => +s.trim());
+      ps.forEach((pv, i) => {
+        recs.push({ receiver: r, index: i, potVal: pv });
+      });
+    }
   });
   return recs;
 }
 
-// ─── 4. Helpers ──────────────────────────────────────────────────────────────
-function computeScales() {
-  const xE = d3.extent(formattedData, d=>d.X);
-  const yE = d3.extent(formattedData, d=>d.Y);
-  xCenter   = (xE[0] + xE[1]) / 2;
-  yCenter   = (yE[0] + yE[1]) / 2;
-  colorScale = d3.scaleSequential(d3.interpolateRgb("white","salmon"))
-                 .domain(d3.extent(formattedData, d=>d.Density));
-}
-
-function clearScene() {
-  objects.forEach(o => scene.remove(o));
-  objects = [];
-}
-
-// ─── 5. Plotters ─────────────────────────────────────────────────────────────
-function createBarGraph(){
-  formattedData.forEach(d => {
-    const geom = new THREE.BoxGeometry(1,1,d.Z / Z_SCALE_FACTOR);
-    const mat  = new THREE.MeshPhongMaterial({
-      color:       new THREE.Color(colorScale(d.Density)),
-      transparent: true,
-      opacity:     +document.getElementById('opacity').value
-    });
-    const mesh = new THREE.Mesh(geom, mat);
-    mesh.position.set(
-      (d.X - xCenter) * XY_FACTOR,
-      (d.Y - yCenter) * XY_FACTOR,
-      d.Z / (2 * Z_SCALE_FACTOR)
-    );
-    scene.add(mesh);
-    objects.push(mesh);
-  });
-}
-
-function createScatterPlot(){
-  formattedData.forEach(d => {
-    const geom = new THREE.SphereGeometry(d.Z / Z_SCALE_FACTOR / 2,16,16);
-    const mat  = new THREE.MeshPhongMaterial({
-      color:       new THREE.Color(colorScale(d.Density)),
-      transparent: true,
-      opacity:     +document.getElementById('opacity').value
-    });
-    const mesh = new THREE.Mesh(geom, mat);
-    mesh.position.set(
-      (d.X - xCenter) * XY_FACTOR,
-      (d.Y - yCenter) * XY_FACTOR,
-      d.Z / Z_SCALE_FACTOR
-    );
-    scene.add(mesh);
-    objects.push(mesh);
-  });
-}
-
-function createHeatmap(){
-  formattedData.forEach(d => {
-    const geom = new THREE.PlaneGeometry(1,1);
-    const mat  = new THREE.MeshBasicMaterial({
-      color:       new THREE.Color(colorScale(d.Density)),
-      transparent: true,
-      opacity:     +document.getElementById('opacity').value
-    });
-    const mesh = new THREE.Mesh(geom, mat);
-    mesh.position.set(
-      (d.X - xCenter) * XY_FACTOR,
-      (d.Y - yCenter) * XY_FACTOR,
-      0
-    );
-    scene.add(mesh);
-    objects.push(mesh);
-  });
-}
-
-function createLineGraph(){
-  const geom  = new THREE.BufferGeometry();
-  const verts = [], cols = [];
-  formattedData.forEach(d => {
-    verts.push(
-      (d.X - xCenter) * XY_FACTOR,
-      (d.Y - yCenter) * XY_FACTOR,
-      d.Z / Z_SCALE_FACTOR
-    );
-    const c = new THREE.Color(colorScale(d.Density));
-    cols.push(c.r,c.g,c.b);
-  });
-  geom.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
-  geom.setAttribute('color',   new THREE.Float32BufferAttribute(cols, 3));
-  const mat = new THREE.LineBasicMaterial({
-    vertexColors: true,
-    transparent:  true,
-    opacity:      +document.getElementById('opacity').value
-  });
-  const line = new THREE.Line(geom, mat);
-  scene.add(line);
-  objects.push(line);
-}
-
-// ─── 6. Dispatcher ──────────────────────────────────────────────────────────
-function renderVisualization(data){
-  formattedData = data;
-  computeScales();
-  clearScene();
-  switch(document.getElementById('visualizationType').value){
-    case 'bar':     createBarGraph();    break;
-    case 'scatter': createScatterPlot(); break;
-    case 'heatmap': createHeatmap();     break;
-    case 'line':    createLineGraph();   break;
+// ─── 3. Render a simple heatmap ───────────────────────────────────────────────
+function renderHeatmap(data) {
+  // ensure D3 is available
+  if (typeof d3 === 'undefined') {
+    console.error('d3.js is required for the heatmap');
+    return;
   }
+
+  // prepare container
+  let container = document.getElementById('heatmap');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'heatmap';
+    container.style.position = 'absolute';
+    container.style.top      = '220px';
+    container.style.left     = '10px';
+    container.style.zIndex   = 10;
+    document.body.appendChild(container);
+  }
+  container.innerHTML = '';
+
+  // group and sort by receiver
+  const byReceiver = d3.group(data, d => d.receiver);
+  const potValues  = data.map(d => d.potVal);
+  const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
+                       .domain([d3.min(potValues), d3.max(potValues)]);
+
+  // for each receiver, make a row of 9 squares
+  Array.from(byReceiver.keys()).sort((a,b)=>a-b).forEach(r => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.margin = '4px 0';
+
+    // label
+    const label = document.createElement('div');
+    label.textContent = `Receiver ${r}:`;
+    label.style.width = '80px';
+    label.style.fontWeight = 'bold';
+    label.style.marginRight = '8px';
+    row.appendChild(label);
+
+    // cells
+    byReceiver.get(r)
+      .sort((a,b)=>a.index-b.index)
+      .forEach(d => {
+        const cell = document.createElement('div');
+        cell.textContent = d.potVal;
+        cell.style.width  = '30px';
+        cell.style.height = '30px';
+        cell.style.lineHeight = '30px';
+        cell.style.textAlign = 'center';
+        cell.style.margin = '0 2px';
+        cell.style.background = colorScale(d.potVal);
+        cell.style.color = d.potVal > (d3.max(potValues)/2) ? '#000' : '#333';
+        cell.style.borderRadius = '4px';
+        row.appendChild(cell);
+      });
+
+    container.appendChild(row);
+  });
 }
-
-// ─── 7. Animate + Resize ─────────────────────────────────────────────────────
-camera.position.set(50,50,50);
-camera.lookAt(scene.position);
-
-function animate(){
-  requestAnimationFrame(animate);
-  camera.zoom = +document.getElementById('zoom').value/50;
-  camera.updateProjectionMatrix();
-  camera.rotation.z = +document.getElementById('rotation').value*Math.PI/180;
-  renderer.render(scene,camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-});
