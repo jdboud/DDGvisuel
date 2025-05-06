@@ -1,6 +1,6 @@
 // ─── 0. Top constants ────────────────────────────────────────────────────────
 const XY_FACTOR      = 0.15;   // tweak until your X/Y spread feels right
-const Z_SCALE_FACTOR = 500;   // tweak to flatten or exaggerate Z
+const Z_SCALE_FACTOR = 10;   // tweak to flatten or exaggerate Z
 
 // ─── 1. Bar graph ────────────────────────────────────────────────────────────
 function createBarGraph(){
