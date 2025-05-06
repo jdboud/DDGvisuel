@@ -17,7 +17,7 @@ const scene    = new THREE.Scene();
 const camera   = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-camera.position.set(20, 20, 40);
+camera.position.set(10, 10, 20);
 camera.lookAt(0, 0, 0);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xffffff, 1);
