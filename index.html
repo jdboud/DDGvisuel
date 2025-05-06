@@ -2,53 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Three.js Smoke‑Test</title>
+  <title>3D Data Visualization</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #rawData, #parseBtn { display: none; }
+    body { margin: 0; overflow: hidden; background: #fff; }
+    #inputArea {
+      position: absolute; top: 10px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.95);
+      padding: 10px; border-radius: 6px;
+      font-family: sans-serif; z-index: 10;
+    }
+    #rawData { width: 400px; height: 80px; font-family: monospace; }
+    #parseBtn { margin-top: 5px; }
   </style>
 </head>
 <body>
-  <canvas id="c"></canvas>
+
+  <!-- Paste your data here -->
+  <div id="inputArea">
+    <textarea id="rawData"
+      placeholder="Paste your timestamp – Receiver lines…"></textarea><br>
+    <button id="parseBtn">Parse & Render</button>
+  </div>
+
+  <!-- Three.js + D3 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script>
-    // Grab the canvas
-    const canvas   = document.getElementById('c');
-    const renderer = new THREE.WebGLRenderer({ canvas });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Scene & camera
-    const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(2, 2, 2);
-    camera.lookAt(0, 0, 0);
-
-    // A simple red cube
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const cube     = new THREE.Mesh(geometry, material);
-    scene.add(cube);
-
-    // Render loop
-    function animate() {
-      requestAnimationFrame(animate);
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // Handle resize
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-    });
-  </script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
