@@ -2,7 +2,7 @@
 // how “wide” to spread X and Y (was 80)
 const XY_FACTOR = 1.55;
 // how much to compress Z heights (was 1000)
-const Z_SCALE_FACTOR = 500;
+const Z_SCALE_FACTOR = 1500;
 
 function parseMyLines(text) {
   const recs = [];
