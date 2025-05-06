@@ -21,7 +21,7 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 scene.add(container);
 
 // initial camera pos/orientation
-camera.position.set(2, 2, 13);
+camera.position.set(1, 1, 15);
 camera.rotation.set(0, 0, 0);
 
 
