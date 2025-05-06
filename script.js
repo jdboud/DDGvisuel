@@ -31,7 +31,7 @@ const camera = new THREE.OrthographicCamera(
 
 // place it at exactly the same spot you used before,
 // so initialR math still works:
-camera.position.set(1, 1, 15);
+camera.position.set(0, 0, 15);
 camera.up.set(1, 0, 0);
 camera.lookAt(0, 0, 0);
 camera.updateProjectionMatrix();
