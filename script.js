@@ -31,13 +31,19 @@ scene.add(new THREE.AmbientLight(0xfffff4,1));
 // ─── 2. DOM Ready: hook parse button & sliders & dropdown ─────────────────
 window.addEventListener('DOMContentLoaded', () => {
   // seed from the HTML sliders
-  const xySlider = document.getElementById('xyFactor').value = 0.5;;
+  const xySlider = document.getElementById('xyFactor');
   const zSlider  = document.getElementById('zScaleFactor');
-  XY_FACTOR = 0.5;
-  Z_SCALE_FACTOR = +zSlider.value;
-  xySlider.addEventListener('input', e => { XY_FACTOR = +e.target.value; renderVisualization(formattedData); });
-  zSlider .addEventListener('input', e => { Z_SCALE_FACTOR = +e.target.value; renderVisualization(formattedData); });
-
+  xySlider.value      = 0.5;               // default, so grid is nicely spaced
+  XY_FACTOR           = +xySlider.value;
+  Z_SCALE_FACTOR      = +zSlider.value;
+  xySlider.addEventListener('input', e => {
+    XY_FACTOR = +e.target.value;
+    renderVisualization(formattedData);
+  });
+  zSlider.addEventListener('input', e => {
+    Z_SCALE_FACTOR = +e.target.value;
+    renderVisualization(formattedData);
+  });
   // parse button
   document.getElementById('parseBtn').onclick = () => {
     const raw = document.getElementById('rawData').value.trim();
@@ -130,12 +136,12 @@ function createBarGraph() {
 
 
 // ─── 7. Animate + Resize ───────────────────────────────────────────────────
-camera.position.set(2,2,4);
-camera.lookAt(new THREE.Vector3(0,0,0));
 
 function animate(){
   requestAnimationFrame(animate);
-  // apply zoom & rotation controls
+  // update orbit controls
+  controls.update();
+  // apply zoom & rotation from sliders
   camera.zoom = +document.getElementById('zoom').value / 50;
   camera.updateProjectionMatrix();
   camera.rotation.z = +document.getElementById('rotation').value * Math.PI/180;
