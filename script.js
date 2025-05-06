@@ -10,27 +10,56 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── 2. Parse the raw lines into {receiver, index, potVal} records ──────────
-function parseLines(text) {
+function parseMyLines(text) {
   const recs = [];
-  text.split(/\r?\n/).forEach(line => {
-    // find all four receivers in one pass
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  lines.forEach((line, yi) => {
     for (let r = 1; r <= 4; r++) {
-      // e.g. “Receiver 2: 11179, 11312… – PotVals: 22, 19…”
-      const re = new RegExp(
-        `Receiver\\s*${r}\\s*:\\s*([\\d,\\s]+?)\\s*-\\s*PotVals\\s*:\\s*([\\d,\\s]+)`
+      // match exactly “Receiver r: … – PotVals: …”
+      const m = line.match(
+        new RegExp(`Receiver\\s*${r}\\s*:\\s*([\\d,\\s]+?)\\s*-\\s*PotVals\\s*:\\s*([\\d,\\s]+)`)
       );
-      const m = re.exec(line);
       if (!m) continue;
-      const zs = m[1].split(',').map(s => +s.trim());   // you can ignore the actual readings if you want
-      const ps = m[2].split(',').map(s => +s.trim());
-      ps.forEach((pv, i) => {
-        recs.push({ receiver: r, index: i, potVal: pv });
+      const readings = m[1].split(',').map(s=>+s.trim());
+      const pots     = m[2].split(',').map(s=>+s.trim());
+      readings.forEach((val, xi) => {
+        recs.push({
+          rawReading: val,
+          potVal:     pots[xi]
+        });
       });
     }
   });
   return recs;
 }
+// ─── createBarGraph: grid‐wrap and place all 180 bars ────────────────────────
+function createBarGraph() {
+  const all = formattedData;  // array of length 4*5*9 = 180
+  const wrap = 6;             // columns per row
+  all.forEach((d, i) => {
+    // compute grid coordinates
+    const col = i % wrap;           // 0…5
+    const row = Math.floor(i / wrap);// 0…29
+    // if you want Right→Left instead of Left→Right:
+    const x = (wrap - 1 - col) * XY_FACTOR;
+    const y = row              * XY_FACTOR;
+    const zh = d.rawReading / Z_SCALE_FACTOR;
 
+    // make the bar
+    const geom = new THREE.BoxGeometry(0.9 * XY_FACTOR, 0.9 * XY_FACTOR, zh);
+    const mat  = new THREE.MeshPhongMaterial({
+      color:       new THREE.Color(colorScale(d.potVal)),
+      transparent: true,
+      opacity:     +document.getElementById('opacity').value
+    });
+    const bar = new THREE.Mesh(geom, mat);
+    // lift it so its base sits on z=0
+    bar.position.set(x, y, zh/2);
+
+    scene.add(bar);
+    objects.push(bar);
+  });
+}
 // ─── 3. Render a simple heatmap ───────────────────────────────────────────────
 function renderHeatmap(data) {
   // ensure D3 is available
