@@ -1,8 +1,8 @@
 // ─── 1. Parse & button hook ─────────────────────────────────────────────────
 // how “wide” to spread X and Y (was 80)
-const XY_SPREAD = 200;
+const XY_SPREAD = 800;
 // how much to compress Z heights (was 1000)
-const Z_SCALE_FACTOR = 500;
+const Z_SCALE_FACTOR = 1000;
 
 function parseMyLines(text) {
   const recs = [];
